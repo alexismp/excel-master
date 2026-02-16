@@ -1,0 +1,5 @@
+{
+  "name": "ExcelMaster AI",
+  "description": "An interactive Excel learning application focusing on XLOOKUP and essentials, featuring a live spreadsheet simulator and AI-powered tutoring.",
+  "requestFramePermissions": []
+}
