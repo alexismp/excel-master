@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getAllSessions, generateUserId, UserSession } from '../services/tracker';
+import { listenToAllSessions, generateUserId, UserSession } from '../services/tracker';
 import { LESSONS } from '../constants';
 import { ChevronRight, ChevronDown, User, Clock, CheckCircle, RefreshCcw, Copy, Check } from 'lucide-react';
 
@@ -9,21 +9,17 @@ const AdminPage: React.FC = () => {
     const [newId, setNewId] = useState<string | null>(null);
     const [copied, setCopied] = useState<'id' | 'url' | null>(null);
 
-    const loadSessions = () => {
-        setSessions(getAllSessions());
-    };
-
     useEffect(() => {
-        loadSessions();
-        const interval = setInterval(loadSessions, 5000); 
-        return () => clearInterval(interval);
+        const unsubscribe = listenToAllSessions((updatedSessions) => {
+            setSessions(updatedSessions);
+        });
+        return () => unsubscribe();
     }, []);
 
     const createNewId = () => {
         const id = generateUserId();
         setNewId(id);
         setCopied(null);
-        loadSessions();
     };
 
     const copyToClipboard = (text: string, type: 'id' | 'url') => {
@@ -93,9 +89,10 @@ const AdminPage: React.FC = () => {
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 <div className="p-4 bg-gray-100 border-b border-gray-200 flex items-center justify-between">
                     <h2 className="font-bold text-gray-700">Active Sessions</h2>
-                    <button onClick={loadSessions} className="text-gray-500 hover:text-green-600">
-                        <RefreshCcw className="w-4 h-4" />
-                    </button>
+                    <div className="text-xs text-gray-400 flex items-center gap-1">
+                        <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                        Live Updates
+                    </div>
                 </div>
 
                 <div className="divide-y divide-gray-100">

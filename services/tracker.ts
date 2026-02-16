@@ -1,5 +1,3 @@
-import { Lesson } from "./types";
-
 export interface UserProgress {
     userId: string;
     lessonId: string;
@@ -14,61 +12,46 @@ export interface UserSession {
     progress: Record<string, UserProgress>;
 }
 
-const STORAGE_KEY = 'excel_master_tracking';
-
 export const generateUserId = () => {
     return Math.random().toString(36).substring(2, 5).toUpperCase();
 };
 
-export const saveSession = (session: UserSession) => {
-    const allSessions = getAllSessions();
-    allSessions[session.userId] = session;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(allSessions));
+export const trackVisit = async (userId: string, lessonId: string) => {
+    await fetch('/api/track/visit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, lessonId })
+    });
 };
 
-export const getAllSessions = (): Record<string, UserSession> => {
-    const data = localStorage.getItem(STORAGE_KEY);
-    return data ? JSON.parse(data) : {};
+export const trackIncorrectFormula = async (userId: string, lessonId: string, formula: string) => {
+    await fetch('/api/track/incorrect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, lessonId, formula })
+    });
 };
 
-export const getSession = (userId: string): UserSession | null => {
-    return getAllSessions()[userId] || null;
+export const trackSuccess = async (userId: string, lessonId: string) => {
+    await fetch('/api/track/success', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, lessonId })
+    });
 };
 
-export const trackVisit = (userId: string, lessonId: string) => {
-    const session = getSession(userId) || { userId, progress: {} };
+export const listenToAllSessions = (callback: (sessions: Record<string, UserSession>) => void) => {
+    const eventSource = new EventSource('/api/admin/updates');
     
-    // Reset timer on visit
-    session.progress[lessonId] = {
-        userId,
-        lessonId,
-        status: 'pending',
-        startTime: Date.now(),
-        incorrectFormulas: session.progress[lessonId]?.incorrectFormulas || []
+    eventSource.onmessage = (event) => {
+        const sessions = JSON.parse(event.data);
+        callback(sessions);
     };
-    
-    saveSession(session);
-};
 
-export const trackIncorrectFormula = (userId: string, lessonId: string, formula: string) => {
-    const session = getSession(userId);
-    if (!session) return;
+    eventSource.onerror = (err) => {
+        console.error("EventSource failed:", err);
+        eventSource.close();
+    };
 
-    const progress = session.progress[lessonId];
-    if (progress && !progress.incorrectFormulas.includes(formula)) {
-        progress.incorrectFormulas.push(formula);
-        saveSession(session);
-    }
-};
-
-export const trackSuccess = (userId: string, lessonId: string) => {
-    const session = getSession(userId);
-    if (!session) return;
-
-    const progress = session.progress[lessonId];
-    if (progress && progress.status !== 'success') {
-        progress.status = 'success';
-        progress.endTime = Date.now();
-        saveSession(session);
-    }
+    return () => eventSource.close();
 };

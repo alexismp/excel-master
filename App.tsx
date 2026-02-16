@@ -27,7 +27,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (userId) {
-      trackVisit(userId, activeLessonId);
+      trackVisit(userId, activeLessonId).catch(console.error);
     }
   }, [activeLessonId, userId]);
 
@@ -64,16 +64,16 @@ const App: React.FC = () => {
             if (activeLesson.expectedFormula && !cell.formula.toUpperCase().includes(activeLesson.expectedFormula)) {
                  // Correct value but wrong method - keep pending
                  if (cell.formula.startsWith('=') && userId) {
-                    trackIncorrectFormula(userId, activeLesson.id, cell.formula);
+                    trackIncorrectFormula(userId, activeLesson.id, cell.formula).catch(console.error);
                  }
             } else {
                  setTaskStatus('success');
                  if (userId) {
-                    trackSuccess(userId, activeLesson.id);
+                    trackSuccess(userId, activeLesson.id).catch(console.error);
                  }
             }
         } else if (cell.formula.startsWith('=') && userId) {
-             trackIncorrectFormula(userId, activeLesson.id, cell.formula);
+             trackIncorrectFormula(userId, activeLesson.id, cell.formula).catch(console.error);
         }
     }
   }, [sheetData, activeLesson, userId]);
