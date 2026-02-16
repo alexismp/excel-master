@@ -10,6 +10,8 @@ An interactive Excel learning application designed to help users master essentia
     - Monitor active sessions live via **Server-Sent Events (SSE)**.
     - Generate unique 3-character access IDs.
     - Track progress, time spent per exercise, and log incorrect formula attempts.
+    - **Activity Monitoring**: View first and last activity timestamps for every participant.
+    - **Session Management**: Delete sessions directly from the dashboard to reset progress or clear data.
 - **Syntax Highlighting**: Color-coded formula parameters to assist learning.
 - **Secure Backend**: All data writes are handled by a Node.js backend, ensuring secure Firestore interactions.
 

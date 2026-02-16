@@ -9,11 +9,19 @@ export interface UserProgress {
 
 export interface UserSession {
     userId: string;
+    firstActiveDerived?: number;
+    lastActive?: number;
     progress: Record<string, UserProgress>;
 }
 
 export const generateUserId = () => {
     return Math.random().toString(36).substring(2, 5).toUpperCase();
+};
+
+export const deleteSession = async (userId: string) => {
+    await fetch(`/api/admin/sessions/${userId}`, {
+        method: 'DELETE'
+    });
 };
 
 export const trackVisit = async (userId: string, lessonId: string) => {

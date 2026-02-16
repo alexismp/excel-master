@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { listenToAllSessions, generateUserId, UserSession } from '../services/tracker';
+import { listenToAllSessions, generateUserId, deleteSession, UserSession } from '../services/tracker';
 import { LESSONS } from '../constants';
-import { ChevronRight, ChevronDown, User, Clock, CheckCircle, RefreshCcw, Copy, Check } from 'lucide-react';
+import { ChevronRight, ChevronDown, User, Clock, CheckCircle, Copy, Check, Trash2 } from 'lucide-react';
 
 const AdminPage: React.FC = () => {
     const [sessions, setSessions] = useState<Record<string, UserSession>>({});
@@ -22,6 +22,13 @@ const AdminPage: React.FC = () => {
         setCopied(null);
     };
 
+    const handleDeleteSession = async (e: React.MouseEvent, userId: string) => {
+        e.stopPropagation();
+        if (confirm(`Are you sure you want to delete session ${userId}? All progress will be lost.`)) {
+            await deleteSession(userId);
+        }
+    };
+
     const copyToClipboard = (text: string, type: 'id' | 'url') => {
         navigator.clipboard.writeText(text);
         setCopied(type);
@@ -32,6 +39,11 @@ const AdminPage: React.FC = () => {
         const seconds = Math.floor(ms / 1000);
         const minutes = Math.floor(seconds / 60);
         return `${minutes}m ${seconds % 60}s`;
+    };
+
+    const formatTimestamp = (ts?: number) => {
+        if (!ts) return '-';
+        return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     };
 
     const fullUrl = newId ? `${window.location.origin}?id=${newId}` : '';
@@ -99,7 +111,9 @@ const AdminPage: React.FC = () => {
                     {Object.values(sessions).length === 0 ? (
                         <div className="p-8 text-center text-gray-400">No sessions found.</div>
                     ) : (
-                        Object.values(sessions).map(session => (
+                        Object.values(sessions)
+                        .sort((a, b) => (b.lastActive || 0) - (a.lastActive || 0))
+                        .map(session => (
                             <div key={session.userId} className="flex flex-col">
                                 <div 
                                     className="p-4 hover:bg-gray-50 cursor-pointer flex items-center justify-between"
@@ -110,15 +124,36 @@ const AdminPage: React.FC = () => {
                                         <div className="bg-blue-100 p-2 rounded-full">
                                             <User className="text-blue-600 w-5 h-5" />
                                         </div>
-                                        <div>
+                                        <div className="flex flex-col">
                                             <span className="font-mono font-bold text-lg">{session.userId}</span>
                                             <div className="text-xs text-gray-400">
                                                 {Object.keys(session.progress).length} exercises started
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="flex gap-2">
-                                        {Object.values(session.progress).filter(p => p.status === 'success').length} / {LESSONS.length} Complete
+                                    <div className="flex items-center gap-8">
+                                        <div className="flex gap-6 text-xs text-gray-500">
+                                            <div className="flex flex-col items-center">
+                                                <span className="uppercase font-semibold text-[10px] text-gray-400">First Seen</span>
+                                                <span>{formatTimestamp(session.firstActiveDerived)}</span>
+                                            </div>
+                                            <div className="flex flex-col items-center">
+                                                <span className="uppercase font-semibold text-[10px] text-gray-400 text-green-600">Last Active</span>
+                                                <span className="font-bold text-gray-700">{formatTimestamp(session.lastActive)}</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-4">
+                                            <div className="bg-gray-100 px-3 py-1 rounded-full text-sm font-medium">
+                                                {Object.values(session.progress).filter(p => p.status === 'success').length} / {LESSONS.length}
+                                            </div>
+                                            <button 
+                                                onClick={(e) => handleDeleteSession(e, session.userId)}
+                                                className="p-2 text-gray-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                                title="Delete Session"
+                                            >
+                                                <Trash2 className="w-5 h-5" />
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
 

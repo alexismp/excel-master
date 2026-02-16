@@ -54,22 +54,31 @@ app.post('/api/track/visit', async (req, res) => {
         console.log(`[Visit] User: ${userId}, Lesson: ${lessonId}`);
         const sessionRef = db.collection(COLLECTION_NAME).doc(userId);
         
+        const now = Date.now();
         const progressData = {
             userId,
             lessonId,
             status: 'pending',
-            startTime: Date.now(),
+            startTime: now,
             incorrectFormulas: []
         };
 
         await sessionRef.set({
             userId,
+            firstActive: FieldValue.serverTimestamp(), // Only set on create if using set with merge? No, better use set with merge and check existence or just use serverTimestamp
+            lastActive: now,
             progress: {
                 [lessonId]: progressData
             }
         }, { merge: true });
-        console.log(`[Visit] Success for ${userId}`);
+        
+        // Ensure firstActive is only set once
+        const doc = await sessionRef.get();
+        if (!doc.data().firstActiveDerived) {
+            await sessionRef.update({ firstActiveDerived: now });
+        }
 
+        console.log(`[Visit] Success for ${userId}`);
         res.status(200).send({ success: true });
     } catch (error) {
         console.error('[Visit Error]:', error);
@@ -80,17 +89,15 @@ app.post('/api/track/visit', async (req, res) => {
 app.post('/api/track/incorrect', async (req, res) => {
     try {
         const { userId, lessonId, formula } = req.body;
-        console.log(`[Incorrect] User: ${userId}, Lesson: ${lessonId}, Formula: ${formula}`);
+        const now = Date.now();
         const sessionRef = db.collection(COLLECTION_NAME).doc(userId);
         
         await sessionRef.update({
+            lastActive: now,
             [`progress.${lessonId}.incorrectFormulas`]: FieldValue.arrayUnion(formula)
         });
-        console.log(`[Incorrect] Success for ${userId}`);
-
         res.status(200).send({ success: true });
     } catch (error) {
-        console.error('[Incorrect Error]:', error);
         res.status(500).send(error.message);
     }
 });
@@ -98,18 +105,28 @@ app.post('/api/track/incorrect', async (req, res) => {
 app.post('/api/track/success', async (req, res) => {
     try {
         const { userId, lessonId } = req.body;
-        console.log(`[Success] User: ${userId}, Lesson: ${lessonId}`);
+        const now = Date.now();
         const sessionRef = db.collection(COLLECTION_NAME).doc(userId);
         
         await sessionRef.update({
+            lastActive: now,
             [`progress.${lessonId}.status`]: 'success',
-            [`progress.${lessonId}.endTime`]: Date.now()
+            [`progress.${lessonId}.endTime`]: now
         });
-        console.log(`[Success] recorded for ${userId}`);
-
         res.status(200).send({ success: true });
     } catch (error) {
-        console.error('[Success Error]:', error);
+        res.status(500).send(error.message);
+    }
+});
+
+app.delete('/api/admin/sessions/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        await db.collection(COLLECTION_NAME).doc(id).delete();
+        console.log(`[Delete] Session ${id} removed`);
+        res.status(200).send({ success: true });
+    } catch (error) {
+        console.error('[Delete Error]:', error);
         res.status(500).send(error.message);
     }
 });
