@@ -2,8 +2,6 @@
 
 An interactive Excel learning application designed to help users master essential formulas, with a special focus on **XLOOKUP**. The app features a live spreadsheet simulator, an AI-powered tutor, and an admin dashboard for progress tracking.
 
-![ExcelMaster AI Banner](https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6)
-
 ## 🚀 Features
 
 - **Interactive Spreadsheet**: A custom-built grid that supports formulas like `XLOOKUP`, `SUM`, `AVERAGE`, `IF`, `COUNTIF`, and more.
